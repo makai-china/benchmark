@@ -101,10 +101,6 @@ main()
 
     exec_sqls
 
-    if [ "$dataloaded" == "false" ]; then
-	    drop_db 
-    fi
-
     clean
 }
 
