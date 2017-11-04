@@ -10,8 +10,8 @@ result_dir=$current_dir/result
 mkdir -p $result_dir
 
 tmpfile=$result_dir/tmp.txt
-resultfile=$result_dir/$timestamp".result"
-reportfile=$result_dir/$timestamp".report"
+resultfile=$result_dir/$timestamp"-"$database".result"
+reportfile=$result_dir/$timestamp"-"$database".report"
 
 clean()
 {
