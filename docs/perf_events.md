@@ -196,7 +196,7 @@ Performance counter stats for './t1':
 4、./flamegraph.pl t1.folded > t1.svg  
 
 最终的输出报告  
-![t1.svg](https://www.github.com/makai-china/benchmark/tree/master/docs/images/t1.svg)      
+![t1.svg](https://www.github.com/makai-china/benchmark/blob/master/docs/images/t1.svg)      
 	
 ## Perf总结  
 对于Linux系统下的性能剖析，Perf工具是非常实用的。借助Perf工具能够快速的定位热点函数，找出需要优化的代码片段。此外，Perf不仅仅可以用来分析计算密集型的程序(CPU BOUND), 还可以分析多线程应用程序的调度负载问题、锁管理优化和内核态的系统调用优化等。
