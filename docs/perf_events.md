@@ -58,66 +58,67 @@ Perf工具本身的功能很强大，但是对于大多数项目来说，我们�
 	This command displays the performance counter profile information recorded via 	perf record.
 	```
 ## Perf实例  
-	通过一个实际的列子来更加直观的说明Perf工具的性能分析过程。  
+通过一个实际的列子来更加直观的说明Perf工具的性能分析过程。  
 
-	编写以下测试代码，并生成可执行程序t1: 
+编写以下测试代码，并生成可执行程序t1: 
 
-	```
-	void func2(long long cols)
+```
+void func2(long long cols)
+{
+	for(long long i = 0; i < cols; i++)
 	{
-		for(long long i = 0; i < cols; i++)
+		long long tmp1 = i / 10000 + 1;
+		long long tmp = tmp1 * (tmp1 + 1);
+	}
+}
+
+void func1(long long rows, long long cols)
+{
+	for(long long i = 0; i < rows; i++)
+	{
+		// do some other computation
+		for(long long m = 0; m < 10000; m++)
 		{
-			long long tmp1 = i / 10000 + 1;
-			long long tmp = tmp1 * (tmp1 + 1);
+			long long tmp = m * (m + 1);
 		}
+		func2(cols);
 	}
+}
 
-	void func1(long long rows, long long cols)
-	{
-		for(long long i = 0; i < rows; i++)
-		{
-			// do some other computation
-			for(long long m = 0; m < 10000; m++)
-			{
-				long long tmp = m * (m + 1);
-			}
-			func2(cols);
-		}
-	}
+int main()
+{
+	long long rows = 1000, cols = 100000000;
+	func1(rows, cols);
+	return 0;
+}
+```  
 
-	int main()
-	{
-		long long rows = 1000, cols = 100000000;
-		func1(rows, cols);
-		return 0;
-	}
-	```  
-	上述代码很明显，func2中包含了计算最密集的那部分代码。  
-	执行perf top命令同样会发现系统90%以上的CPU时间在执行func2。
+上述代码很明显，func2中包含了计算最密集的那部分代码。  
+执行perf top命令同样会发现系统90%以上的CPU时间在执行func2。
 
-	```
-	perf top
-	Samples: 7K of event 'cpu-clock', Event count (approx.): 1804957005
-	Overhead  Shared Object       Symbol
-  		92.72%  t1                  [.] func2
-   		1.12%  [kernel]            [k] __do_softirq
-   		0.55%  [kernel]            [k] _raw_spin_unlock_irqrestore
-   		0.37%  [kernel]            [k] finish_task_switch
-   		0.35%  [kernel]            [k] native_read_tsc
-   		0.23%  perf                [.] __dso__load_kallsyms
-   		0.19%  [kernel]            [k] number.isra.2
-   		0.18%  [kernel]            [k] kallsyms_expand_symbol.constprop.1
-   		0.18%  [kernel]            [k] tick_nohz_idle_enter
-   		0.16%  [kernel]            [k] __memcpy
+```
+perf top
+Samples: 7K of event 'cpu-clock', Event count (approx.): 1804957005
+Overhead  Shared Object       Symbol
+92.72%  t1                  [.] func2
+	1.12%  [kernel]            [k] __do_softirq
+	0.55%  [kernel]            [k] _raw_spin_unlock_irqrestore
+	0.37%  [kernel]            [k] finish_task_switch
+	0.35%  [kernel]            [k] native_read_tsc
+	0.23%  perf                [.] __dso__load_kallsyms
+	0.19%  [kernel]            [k] number.isra.2
+	0.18%  [kernel]            [k] kallsyms_expand_symbol.constprop.1
+	0.18%  [kernel]            [k] tick_nohz_idle_enter
+	0.16%  [kernel]            [k] __memcpy
 	```
 
-	也可以执行perf stat ./t1来了解程序性能的概况  
+也可以执行perf stat ./t1来了解程序性能的概况  
 	
-	```
-	perf stat ./t1
- 	Performance counter stats for './t1':
- 	
-     234202.703074      task-clock (msec)         #    1.001 CPUs utilized
+```
+perf stat ./t1
+Performance counter stats for './t1':
+	
+    234202.703074      task-clock (msec)         #    1.001 CPUs utilized
                521      context-switches          #    0.002 K/sec
                  0      cpu-migrations            #    0.000 K/sec
                256      page-faults               #    0.001 K/sec
@@ -127,19 +128,20 @@ Perf工具本身的功能很强大，但是对于大多数项目来说，我们�
    <not supported>      branch-misses
 
      233.888634032 seconds time elapsed
-	```
+```
 	
-	执行perf record收集采用信息，并生成数据文件perf.data。  
+执行perf record收集采用信息，并生成数据文件perf.data。  
 	
-	```
+```
 	perf record -g ./t1 or perf record -g -p pid  
 	[ perf record: Woken up 67 times to write data ]
 	[ perf record: Captured and wrote 16.684 MB perf.data (198578 samples) ]
 	-g 参数会生成函数的调用堆栈  
-	```  
-	执行perf report得到最终的性能分析报告。  
+```  
+
+执行perf report得到最终的性能分析报告。  
 	
-	```
+```
 	perf report >> result.txt
 	cat result.txt  
 	# To display the perf.data header info, please use --header/--header-only 		options.
@@ -181,19 +183,20 @@ Perf工具本身的功能很强大，但是对于大多数项目来说，我们�
                func1
                |
                 --99.99%--func2
-	```
-	只需要关注报告的前几项，就可以知道热点函数的CPU时间占用比例。 
+```
+
+只需要关注报告的前几项，就可以知道热点函数的CPU时间占用比例。 
 	 
-	如果你觉得上面perf自带的报告不够直观，可以借助网上的第三方脚本得到更加清晰的图形输出报告，第三方脚本地址[https://github.com/brendangregg/FlameGraph](https://github.com/brendangregg/FlameGraph)。  
+如果你觉得上面perf自带的报告不够直观，可以借助网上的第三方脚本得到更加清晰的图形输出报告，第三方脚本地址[https://github.com/brendangregg/FlameGraph](https://github.com/brendangregg/FlameGraph)。  
 
-	生成报告的执行步骤:  
-	1、perf record -g ./t1 or perf record -g -p pid  
-	2、perf script >> t1.perf  
-	3、./stackcollapse-perf.pl t1.perf > t1.folded  
-	4、./flamegraph.pl t1.folded > t1.svg  
+生成报告的执行步骤:  
+1、perf record -g ./t1 or perf record -g -p pid  
+2、perf script >> t1.perf  
+3、./stackcollapse-perf.pl t1.perf > t1.folded  
+4、./flamegraph.pl t1.folded > t1.svg  
 
-	最终的输出报告  
-	![t1.svg](https://github.com/makai-china/benchmark/tree/master/docs/images/t1.svg)      
+最终的输出报告  
+![t1.svg](https://www.github.com/makai-china/benchmark/tree/master/docs/images/t1.svg)      
 	
-	## Perf总结  
-	对于Linux系统下的性能剖析，Perf工具是非常实用的。借助Perf工具能够快速的定位热点函数，找出需要优化的代码片段。此外，Perf不仅仅可以用来分析计算密集型的程序(CPU BOUND), 还可以分析多线程应用程序的调度负载问题、锁管理优化和内核态的系统调用优化等。
+## Perf总结  
+对于Linux系统下的性能剖析，Perf工具是非常实用的。借助Perf工具能够快速的定位热点函数，找出需要优化的代码片段。此外，Perf不仅仅可以用来分析计算密集型的程序(CPU BOUND), 还可以分析多线程应用程序的调度负载问题、锁管理优化和内核态的系统调用优化等。
